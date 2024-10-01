@@ -25,6 +25,7 @@ export function parseL402Header(header: string): L402Credentials {
 
 export function decodeInvoice(invoice: string): ReturnType<typeof decode> {
   try {
+    console.log('invoice', invoice)
     return decode(invoice);
   } catch (error) {
     console.error('Error decoding invoice:', error);
@@ -46,7 +47,7 @@ export function extractPaymentHash(invoice: string): string | null {
   }
 }
 
-export async function checkPaymentStatus(paymentHash: string): Promise<boolean> {
+export async function checkPaymentStatus(paymentHash: string): Promise<{settled: boolean, preimage: string}> {
   try {
     const response = await fetch(`http://localhost:8080/auth/check-invoice/${paymentHash}`);
     if (!response.ok) {
@@ -54,9 +55,28 @@ export async function checkPaymentStatus(paymentHash: string): Promise<boolean> 
     }
     const { status } = await response.json();
     console.log('status', status)
-    return status.settled;
+    return {settled: status.settled, preimage: status.preimage};
   } catch (error) {
     console.error('Error checking payment status:', error);
-    return false;
+    return {settled: false, preimage: ''};
+  }
+}
+
+export async function fetchL402Video(endpoint: string, preimage: string, macaroon: string) {
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `L402 ${macaroon}:${preimage}`
+      },
+    });
+    if (!response.ok) {
+      throw new Error('Network response was not ok');
+    }
+    return response;
+  } catch (error) {
+    console.error('Error fetching video with preimage:', error);
+    throw error;
   }
 }

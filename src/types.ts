@@ -8,6 +8,8 @@ export interface VideoInfo {
 
 export interface LightningInvoiceQRProps {
   invoice: string;
+  paymentHash: string;
+  onPaymentComplete: (preimage: string) => void;
 }
 
 export interface L402Credentials {

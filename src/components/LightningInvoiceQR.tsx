@@ -1,25 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
-import { extractPaymentHash, checkPaymentStatus } from '../utils/l402';
+import { checkPaymentStatus } from '../utils/l402';
 import { LightningInvoiceQRProps } from '../types';
 
-const LightningInvoiceQR: React.FC<LightningInvoiceQRProps> = ({ invoice }) => {
+const LightningInvoiceQR: React.FC<LightningInvoiceQRProps> = ({ invoice, paymentHash, onPaymentComplete }) => {
   const [isPaid, setIsPaid] = useState(false);
-  const [paymentHash, setPaymentHash] = useState<string | null>(null);
-
-  useEffect(() => {
-    const hash = extractPaymentHash(invoice);
-    setPaymentHash(hash);
-  }, [invoice]);
 
   useEffect(() => {
     if (!paymentHash) return;
 
     const pollPaymentStatus = async () => {
-      const paid = await checkPaymentStatus(paymentHash);
-      if (paid) {
+      const { settled, preimage } = await checkPaymentStatus(paymentHash);
+      if (settled) {
         setIsPaid(true);
-        return true; // Stop polling if paid
+        onPaymentComplete(preimage);
+        return true;
       }
       return false;
     };
@@ -29,10 +24,10 @@ const LightningInvoiceQR: React.FC<LightningInvoiceQRProps> = ({ invoice }) => {
       if (shouldStop) {
         clearInterval(pollInterval);
       }
-    }, 10000); // Poll every 10 seconds
+    }, 10000);
 
     return () => clearInterval(pollInterval);
-  }, [paymentHash]);
+  }, [paymentHash, onPaymentComplete]);
 
   return (
     <div className="mt-4">

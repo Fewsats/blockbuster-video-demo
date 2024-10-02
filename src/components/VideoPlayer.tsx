@@ -29,11 +29,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ url }) => {
   }, [url]);
 
   return (
-    <div className="mt-4">
-      <h2 className="text-xl font-semibold mb-2">Video Player</h2>
-      <video ref={videoRef} controls width="100%" height="auto">
-        Your browser does not support the video tag or HLS playback.
-      </video>
+    <div className="mt-4 video-container" style={{ maxWidth: '853px', margin: '0 auto' }}>
+      <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
+        <video 
+          ref={videoRef} 
+          controls 
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+        >
+          Your browser does not support the video tag or HLS playback.
+        </video>
+      </div>
     </div>
   );
 };

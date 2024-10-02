@@ -1,75 +1,67 @@
 import { useState, useCallback } from 'react';
 import { VideoInfo } from '../types';
-import { generateKeysAndSignature } from '../utils/signature';
-import { parseL402Header, extractPaymentHash, fetchL402Video } from '../utils/l402';
+import { extractPaymentHash, fetchL402Video, handleL402URIScheme, makeStreamVideoRequest} from '../utils/l402';
+import { L402CredentialManager } from '../utils/l402CredentialsManager';
 
 export function useVideoFlow() {
-  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
-  const [invoice, setInvoice] = useState<string>("");
-  const [macaroon, setMacaroon] = useState<string>("");
-  const [paymentHash, setPaymentHash] = useState<string | null>(null);
-  const [videoUrl, setVideoUrl] = useState<string | null>(null);
-
-  const handleUriSubmit = useCallback(async (uri: string) => {
-    try {
-      const modifiedUri = uri.replace('l402://', uri.includes('localhost') ? 'http://' : 'https://');
-      const response = await fetch(modifiedUri);
-      const data = await response.json();
-      setVideoInfo(data);
-
-      const { access: { endpoint } } = data;
-      if (endpoint) {
-        const domain = new URL(endpoint).host;
-        const timestamp = Math.floor(Date.now() / 1000);
-
-        const { pubKeyHex, signatureHex } = await generateKeysAndSignature(domain, timestamp);
-
-        const streamVideoRequest = {
-          pub_key: pubKeyHex,
-          domain: domain,
-          timestamp: timestamp,
-          signature: signatureHex
-        };
-
-        const endpointResponse = await fetch(endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(streamVideoRequest),
-        });
-
-        const wwwAuthenticateHeader = endpointResponse.headers.get('Www-Authenticate');
-        if (wwwAuthenticateHeader) {
-          const { invoice, macaroon } = parseL402Header(wwwAuthenticateHeader);
-
-          setInvoice(invoice);
-          setMacaroon(macaroon);
-          console.log('invoice', invoice)
-          setPaymentHash(extractPaymentHash(invoice));
+    const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
+    const [invoice, setInvoice] = useState<string>("");
+    const [macaroon, setMacaroon] = useState<string>("");
+    const [paymentHash, setPaymentHash] = useState<string | null>(null);
+    const [videoUrl, setVideoUrl] = useState<string | null>(null);
+    
+    const handleUriSubmit = useCallback(async (uri: string) => {
+        try {
+            // 
+            const data = await handleL402URIScheme(uri)
+            setVideoInfo(data);
+            
+            const { access: { endpoint } } = data;
+            if (!endpoint) {
+                throw new Error("Invalid endpoint")
+            }
+            
+            const storedAuthHeader = L402CredentialManager.getCredentials(endpoint)
+            console.log('fetched credentials: ', endpoint, storedAuthHeader)
+            // The user already bought the video, stream directly with L402 auth header
+            if (storedAuthHeader) {
+                const hls_url = await fetchL402Video(endpoint, storedAuthHeader)
+                setVideoUrl(hls_url);
+                return
+            }
+            
+            // The user has not bought the video yet, so we need to make a signed L402 purchase
+            // with our pubkey
+            const { invoice, macaroon } = await makeStreamVideoRequest(endpoint)
+                setInvoice(invoice);
+                setMacaroon(macaroon);
+                console.log('invoice', invoice)
+                setPaymentHash(extractPaymentHash(invoice));
+            
+            
+        } catch (error) {
+            console.error('Error fetching video info:', error);
         }
-      }
-    } catch (error) {
-      console.error('Error fetching video info:', error);
-    }
-  }, []);
+    }, []);
+    
+    const handlePaymentComplete = useCallback(async (preimage: string) => {
+        if (videoInfo && paymentHash) {
+            const { access: { endpoint } } = videoInfo;
+            const authHeader = `L402 ${macaroon}:${preimage}`
+            const hls_url = await fetchL402Video(endpoint, authHeader);
 
-  const handlePaymentComplete = useCallback(async (preimage: string) => {
-    if (videoInfo && paymentHash) {
-      const { access: { endpoint } } = videoInfo;
-      const response = await fetchL402Video(endpoint, preimage, macaroon);
-      const data = await response.json();
-      console.log('L402 video response', data);
-      setVideoUrl(data.hls_url);
-    }
-  }, [videoInfo, paymentHash, macaroon]);
-
-  return {
-    videoInfo,
-    invoice,
-    paymentHash,
-    videoUrl,
-    handleUriSubmit,
-    handlePaymentComplete
-  };
+            L402CredentialManager.saveCredentials(endpoint, authHeader)
+            console.log('saved credentials: ', endpoint, authHeader)
+            setVideoUrl(hls_url);
+        }
+    }, [videoInfo, paymentHash, macaroon]);
+    
+    return {
+        videoInfo,
+        invoice,
+        paymentHash,
+        videoUrl,
+        handleUriSubmit,
+        handlePaymentComplete
+    };
 }

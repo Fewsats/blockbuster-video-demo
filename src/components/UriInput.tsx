@@ -1,11 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface UriInputProps {
   onUriSubmit: (uri: string) => void;
+  initialUri: string;
 }
 
-const UriInput: React.FC<UriInputProps> = ({ onUriSubmit }) => {
-  const [uri, setUri] = useState('l402://localhost:8080/video/info/f433e35ba3394441bb1749aab21b17e9');
+const UriInput: React.FC<UriInputProps> = ({ onUriSubmit, initialUri }) => {
+  const [uri, setUri] = useState(initialUri);
+
+  useEffect(() => {
+    setUri(initialUri);
+  }, [initialUri]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

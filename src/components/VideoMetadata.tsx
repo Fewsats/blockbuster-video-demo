@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import VideoPlayer from './VideoPlayer';
 
 interface VideoMetadataProps {
   metadata: {
@@ -7,9 +8,10 @@ interface VideoMetadataProps {
     cover_url: string;
     pricing: { amount: number; currency: string }[];
   };
+  videoUrl: string | null;
 }
 
-const VideoMetadata: React.FC<VideoMetadataProps> = ({ metadata }) => {
+const VideoMetadata: React.FC<VideoMetadataProps> = ({ metadata, videoUrl }) => {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [showButton, setShowButton] = useState(false);
   const descriptionRef = useRef<HTMLParagraphElement>(null);
@@ -24,11 +26,15 @@ const VideoMetadata: React.FC<VideoMetadataProps> = ({ metadata }) => {
     <div className="overflow-hidden border border-gray-200 rounded-lg shadow-lg">
       <div className="video-container" style={{ maxWidth: '853px', margin: '0 auto' }}>
         <div style={{ position: 'relative', paddingBottom: '56.25%', height: 0, overflow: 'hidden' }}>
-          <img
-            src={metadata.cover_url}
-            alt={metadata.name}
-            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
-          />
+          {videoUrl ? (
+            <VideoPlayer url={videoUrl} />
+          ) : (
+            <img
+              src={metadata.cover_url}
+              alt={metadata.name}
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          )}
         </div>
       </div>
       <div className="p-4">

@@ -60,7 +60,7 @@ export function extractPaymentHash(invoice: string): string | null {
 
 export async function checkPaymentStatus(paymentHash: string): Promise<{settled: boolean, preimage: string}> {
     try {
-        const response = await fetch(`http://localhost:8080/auth/check-invoice/${paymentHash}`);
+        const response = await fetch(`https://blockbuster.fewsats.com/auth/check-invoice/${paymentHash}`);
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }

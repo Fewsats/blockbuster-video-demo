@@ -25,7 +25,7 @@ const LightningInvoiceQR: React.FC<LightningInvoiceQRProps> = ({ invoice, paymen
       if (shouldStop) {
         clearInterval(pollInterval);
       }
-    }, 10000);
+    }, 1000);
 
     return () => clearInterval(pollInterval);
   }, [paymentHash, onPaymentComplete]);

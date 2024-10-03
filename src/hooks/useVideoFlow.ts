@@ -10,9 +10,18 @@ export function useVideoFlow() {
     const [paymentHash, setPaymentHash] = useState<string | null>(null);
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     
+    const resetState = useCallback(() => {
+        setVideoInfo(null);
+        setInvoice("");
+        setMacaroon("");
+        setPaymentHash(null);
+        setVideoUrl(null);
+    }, []);
+    
     const handleUriSubmit = useCallback(async (uri: string) => {
         try {
-            // 
+            resetState();
+
             const data = await handleL402URIScheme(uri)
             setVideoInfo(data);
             
@@ -22,7 +31,7 @@ export function useVideoFlow() {
             }
             
             const storedAuthHeader = L402CredentialManager.getCredentials(endpoint)
-            console.log('fetched credentials: ', endpoint, storedAuthHeader)
+
             // The user already bought the video, stream directly with L402 auth header
             if (storedAuthHeader) {
                 const hls_url = await fetchL402Video(endpoint, storedAuthHeader)
@@ -42,7 +51,7 @@ export function useVideoFlow() {
         } catch (error) {
             console.error('Error fetching video info:', error);
         }
-    }, []);
+    }, [resetState]);
     
     const handlePaymentComplete = useCallback(async (preimage: string) => {
         if (videoInfo && paymentHash) {
@@ -51,7 +60,7 @@ export function useVideoFlow() {
             const hls_url = await fetchL402Video(endpoint, authHeader);
 
             L402CredentialManager.saveCredentials(endpoint, authHeader)
-            console.log('saved credentials: ', endpoint, authHeader)
+
             setVideoUrl(hls_url);
         }
     }, [videoInfo, paymentHash, macaroon]);

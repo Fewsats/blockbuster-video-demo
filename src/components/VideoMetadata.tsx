@@ -22,6 +22,7 @@ const VideoMetadata: React.FC<VideoMetadataProps> = ({ metadata, videoUrl }) => 
     }
   }, [metadata.description]);
 
+  console.log('videoURL ', videoUrl)
   return (
     <div className="overflow-hidden border border-gray-200 rounded-lg shadow-lg">
       <div className="video-container" style={{ maxWidth: '853px', margin: '0 auto' }}>

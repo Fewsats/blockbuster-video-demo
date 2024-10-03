@@ -12,7 +12,7 @@ const App: React.FC = () => {
     paymentHash,
     videoUrl,
     handleUriSubmit,
-    handlePaymentComplete
+    handlePaymentComplete,
   } = useVideoFlow();
 
   useEffect(() => {
@@ -28,7 +28,13 @@ const App: React.FC = () => {
     <div className="max-w-3xl mx-auto p-4">
       <h1 className="text-3xl font-bold mb-4 text-center">Blockbuster Video Demo</h1>
       <UriInput onUriSubmit={handleUriSubmit} initialUri={initialUri} />
-      {videoInfo && <VideoMetadata metadata={videoInfo} videoUrl={videoUrl} />}
+      {videoInfo && (
+        <VideoMetadata
+          key={videoUrl}
+          metadata={videoInfo}
+          videoUrl={videoUrl}
+        />
+      )}
       {invoice && paymentHash && (
         <LightningInvoiceQR
           key={invoice}
@@ -37,7 +43,6 @@ const App: React.FC = () => {
           onPaymentComplete={handlePaymentComplete}
         />
       )}
-      {/* {videoUrl && <VideoPlayer url={videoUrl} />} */}
     </div>
   );
 };
